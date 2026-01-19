@@ -14,8 +14,29 @@ enum Tile {
   KEY2, LOCK2
 }
 
-enum Input {
-  UP, DOWN, LEFT, RIGHT
+interface Input{
+  handle():void;
+}
+
+class Right implements Input{
+  handle(){
+      moveHorizontal(1);
+  }
+}
+class Left implements Input{
+  handle(){
+      moveHorizontal(-1);
+}
+}
+class Up implements Input{
+  handle(){
+      moveVertical(-1);
+  }
+}
+class Down implements Input{
+  handle(){
+      moveVertical(1);
+  }
 }
 
 let playerx = 1;
@@ -81,21 +102,29 @@ function moveVertical(dy: number) {
 }
 
 function update() {
+  handleInputs();
+  updateMap();
+}
+function handleInputs(){
   while (inputs.length > 0) {
     let current = inputs.pop();
-    if (current === Input.LEFT)
-      moveHorizontal(-1);
-    else if (current === Input.RIGHT)
-      moveHorizontal(1);
-    else if (current === Input.UP)
-      moveVertical(-1);
-    else if (current === Input.DOWN)
-      moveVertical(1);
+    handleInput(current);
   }
+}
+function handleInput(input : Input){
+  input.handle();
+}
 
+function updateMap(){
   for (let y = map.length - 1; y >= 0; y--) {
     for (let x = 0; x < map[y].length; x++) {
-      if ((map[y][x] === Tile.STONE || map[y][x] === Tile.FALLING_STONE)
+        updateTile(x,y);
+    }
+  }
+}
+
+function updateTile(x:number,y:number){
+        if ((map[y][x] === Tile.STONE || map[y][x] === Tile.FALLING_STONE)
         && map[y + 1][x] === Tile.AIR) {
         map[y + 1][x] = Tile.FALLING_STONE;
         map[y][x] = Tile.AIR;
@@ -108,9 +137,8 @@ function update() {
       } else if (map[y][x] === Tile.FALLING_BOX) {
         map[y][x] = Tile.BOX;
       }
-    }
-  }
 }
+
 function createGraphics(){
   let canvas = document.getElementById("GameCanvas") as HTMLCanvasElement;
   let g = canvas.getContext("2d");
@@ -169,9 +197,9 @@ const UP_KEY = "ArrowUp";
 const RIGHT_KEY = "ArrowRight";
 const DOWN_KEY = "ArrowDown";
 window.addEventListener("keydown", e => {
-  if (e.key === LEFT_KEY || e.key === "a") { inputs.push(Input.LEFT); e.preventDefault(); }
-  else if (e.key === UP_KEY || e.key === "w") { inputs.push(Input.UP); e.preventDefault(); }
-  else if (e.key === RIGHT_KEY || e.key === "d") { inputs.push(Input.RIGHT); e.preventDefault(); }
-  else if (e.key === DOWN_KEY || e.key === "s") { inputs.push(Input.DOWN); e.preventDefault(); }
+  if (e.key === LEFT_KEY || e.key === "a") { inputs.push(new Left); e.preventDefault(); }
+  else if (e.key === UP_KEY || e.key === "w") { inputs.push(new Up); e.preventDefault(); }
+  else if (e.key === RIGHT_KEY || e.key === "d") { inputs.push(new Right); e.preventDefault(); }
+  else if (e.key === DOWN_KEY || e.key === "s") { inputs.push(new Down); e.preventDefault(); }
 });
 
