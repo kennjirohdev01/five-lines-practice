@@ -250,7 +250,8 @@ function transformTile(tile:rawTile){
     case rawTile.LOCK1: return new Lock1;
     case rawTile.KEY2: return new Key2;
     case rawTile.LOCK2: return new Lock2;
-  }
+    default: assertExhausted(tile); // 列挙型をすべて条件に入れているかを確認するための関数
+    }
 }
 
 function transformMap(){
