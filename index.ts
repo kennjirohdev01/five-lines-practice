@@ -14,6 +14,33 @@ enum rawTile {
   KEY2, LOCK2
 }
 
+/*
+enum FallingState{
+  FALLING,
+  RESTING
+}
+*/
+
+interface FallingState{
+  isFalling():boolean;
+  moveHorizontal(tile:Tile,dx:number):void;
+}
+
+class Falling implements FallingState{
+  isFalling(){ return true; }
+  moveHorizontal(tile:Tile,dx:number){}
+}
+class Resting implements FallingState{
+  isFalling(){ return false; }
+  moveHorizontal(tile:Tile,dx:number){
+    if (map[playery][playerx + dx + dx].isAir()
+    && !map[playery + 1][playerx + dx].isAir()) {
+      map[playery][playerx + dx + dx] = tile;
+      moveToTile(playerx + dx, playery);
+    }
+  }
+}
+
 interface Tile{
   isAir():boolean;
   isFlux():boolean;
@@ -137,11 +164,14 @@ class Player implements Tile{
   isBoxy(){return false;}
 }
 class Stone implements Tile{
+  constructor( 
+    private falling:FallingState){
+  }
   isAir(){ return false;}
   isFlux(){ return false;}
   isUnbreakable(){ return false;}
   isPlayer(){ return false;}
-  isFallingStone(){ return false;}
+  isFallingStone(){ return this.falling.isFalling();}
   isFallingBox(){ return false;}
   isKey1(){ return false;}
   isKey2(){ return false;}
@@ -157,42 +187,13 @@ class Stone implements Tile{
   isEdible(){return false;}
   isPushable(){return true;}
   moveHorizontal(dx: number){
-    if (map[playery][playerx + dx + dx].isAir()
-    && !map[playery + 1][playerx + dx].isAir()) {
-      map[playery][playerx + dx + dx] = this;
-      moveToTile(playerx + dx, playery);
-    }
+    this.falling.moveHorizontal(this,dx);
   }
   moveVertical(dy: number): void {}
   isStoney(){return true;}
   isBoxy(){return false;}
 }
 
-class FallingStone implements Tile{
-  isAir(){ return false;}
-  isFlux(){ return false;}
-  isUnbreakable(){ return false;}
-  isPlayer(){ return false;}
-  isFallingStone(){ return true;}
-  isFallingBox(){ return false;}
-  isKey1(){ return false;}
-  isKey2(){ return false;}
-  isLock1(){ return false;}
-  isLock2(){ return false;}
-  color(g:CanvasRenderingContext2D){
-    g.fillStyle = "#0000cc";
-  }
-  draw(g : CanvasRenderingContext2D,x:number,y:number){
-    g.fillStyle = "#0000cc";
-    g.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-  }
-  isEdible(){return false;}
-  isPushable(){return false;}
-  moveHorizontal(dx: number){}
-  moveVertical(dy: number): void {}
-  isStoney(){return true;}
-  isBoxy(){return false;}
-}
 class Box implements Tile{
   isAir(){ return false;}
   isFlux(){ return false;}
@@ -407,8 +408,8 @@ function transformTile(tile:rawTile){
     case rawTile.FLUX :return new Flux;
     case rawTile.UNBREAKABLE: return new Unbreakable;
     case rawTile.PLAYER: return new Player;
-    case rawTile.STONE: return new Stone;
-    case rawTile.FALLING_STONE: return new FallingStone;
+    case rawTile.STONE: return new Stone(new Resting);
+    case rawTile.FALLING_STONE: return new Stone(new Falling);
     case rawTile.BOX: return new Box;
     case rawTile.FALLING_BOX: return new FallingBox;
     case rawTile.KEY1: return new Key1;
@@ -488,14 +489,14 @@ function updateMap(){
 function updateTile(x:number,y:number){
       if (map[y][x].isStoney()
         && map[y + 1][x].isAir()) {
-        map[y + 1][x] = new FallingStone();
+        map[y + 1][x] = new Stone(new Falling);
         map[y][x] = new Air;
       } else if (map[y][x].isBoxy()
         && map[y + 1][x].isAir()) {
         map[y + 1][x] = new FallingBox;
         map[y][x] = new Air;
       } else if (map[y][x].isFallingStone()) {
-        map[y][x] = new Stone;
+        map[y][x] = new Stone(new Resting);
       } else if (map[y][x].isFallingBox()) {
         map[y][x] = new Box;
       }
